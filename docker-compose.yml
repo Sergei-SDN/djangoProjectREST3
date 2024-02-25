@@ -1,0 +1,71 @@
+version: '3'  # Версия Docker Compose файла
+
+services:  # Определение сервисов, которые будут запущены
+
+  redis:  # Сервис Redis
+    image: redis  # Используем официальный образ Redis из Docker Hub
+    ports:  # Открываем порт контейнера, чтобы можно было подключаться к Redis с хоста
+      - "6379:6379"
+
+  db:  # Сервис PostgreSQL
+    image: postgres  # Используем официальный образ PostgreSQL из Docker Hub
+    env_file:  # Загрузка переменных окружения из файла .env
+      - .env
+    environment:  # Определение переменных окружения для PostgreSQL
+      POSTGRES_USER: "postgres"  # Имя пользователя PostgreSQL
+      POSTGRES_PASSWORD: "3625s"  # Пароль пользователя PostgreSQL
+      POSTGRES_DB: "djangoProjectREST3"  # Имя базы данных PostgreSQL
+    volumes:  # Монтирование тома для данных PostgreSQL
+      - pg_data:/var/lib/postgresql/data
+    ports:  # Открываем порт контейнера PostgreSQL для подключения с хоста
+      - "5432:5432"
+    healthcheck:  # Определение healthcheck для контейнера PostgreSQL
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]  # Проверка доступности PostgreSQL через команду pg_isready
+      interval: 10s  # Интервал проверки состояния
+      timeout: 5s  # Таймаут проверки
+      retries: 5  # Количество повторных попыток проверки
+    networks:  # Подключение к пользовательской сети DRF_network
+      - DRF_network
+
+  app:  # Сервис Django-приложения
+    build: .  # Сборка образа Docker из текущей директории (где находится Dockerfile)
+    tty: true  # Включаем поддержку виртуального терминала для взаимодействия с контейнером
+    command: >  # Многострочная команда для выполнения миграций и запуска сервера Django
+      bash -c "python manage.py makemigrations
+      && python manage.py migrate
+      && python manage.py runserver 0.0.0.0:8000"
+    ports:  # Открываем порт контейнера Django для подключения с хоста
+      - '8000:8000'
+    volumes:  # Монтирование текущей директории проекта в контейнер
+      - .:/code
+    depends_on:  # Определение зависимости от контейнера PostgreSQL
+      db:
+        condition: service_healthy  # Запуск сервиса только после успешного прохождения healthcheck
+    env_file:  # Загрузка переменных окружения из файла .env
+      - .env
+    networks:  # Подключение к пользовательской сети DRF_network
+      - DRF_network
+
+  celery:  # Сервис Celery worker
+    build: .  # Сборка образа Docker из текущей директории (где находится Dockerfile)
+    tty: true  # Включаем поддержку виртуального терминала для взаимодействия с контейнером
+    command: celery -A config worker -l INFO -P eventlet  # Команда для запуска Celery worker
+    depends_on:  # Определение зависимостей от Redis и Django-приложения
+      - redis
+      - app
+
+  celery_beat:  # Сервис Celery beat
+    build: .  # Сборка образа Docker из текущей директории (где находится Dockerfile)
+    tty: true  # Включаем поддержку виртуального терминала для взаимодействия с контейнером
+    command: celery -A config beat -l INFO -S django  # Команда для запуска Celery beat
+    depends_on:  # Определение зависимостей от Redis и Django-приложения
+      - redis
+      - app
+
+volumes:  # Определение тома для данных PostgreSQL
+  pg_data:
+
+networks:  # Определение пользовательской сети DRF_network
+  DRF_network:
+    driver: bridge  # Использование bridge-драйвера для сети
+

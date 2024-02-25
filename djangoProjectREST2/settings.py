@@ -93,11 +93,11 @@ WSGI_APPLICATION = 'djangoProjectREST2.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASES_NAME'),
-        'USER': os.getenv('DATABASES_USER'),
-        'HOST': os.getenv('DATABASES_HOST'),
-        'PORT': os.getenv('DATABASES_PORT'),
-        'PASSWORD': os.getenv('DATABASES_PASSWORD')
+        'NAME': os.environ.get('DATABASES_NAME'),
+        'USER': os.environ.get('DATABASES_USER'),
+        'PASSWORD': os.environ.get('DATABASES_PASSWORD'),
+        'HOST': os.environ.get('DATABASES_HOST'),  # Use the service name
+        'PORT': os.environ.get('DATABASES_PORT'),
     }
 }
 
@@ -195,10 +195,10 @@ CORS_ALLOW_ALL_ORIGINS = False
 # Настройки для Celery
 
 # URL-адрес брокера сообщений
-CELERY_BROKER_URL = 'redis://localhost:6379'  # Например, Redis, который по умолчанию работает на порту 6379
+CELERY_BROKER_URL = 'redis://redis:6379'  # Например, Redis, который по умолчанию работает на порту 6379
 
 # URL-адрес брокера результатов, также Redis
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://redis:6379'
 
 # Часовой пояс для работы Celery
 CELERY_TIMEZONE = os.getenv('TIME_ZONE_USER')
