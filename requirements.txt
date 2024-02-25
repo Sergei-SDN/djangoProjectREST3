@@ -1,0 +1,15 @@
+Pillow
+psycopg2-binary
+python-dotenv~=1.0.1
+djangorestframework~=3.14.0
+django~=5.0.1
+django-filter~=23.5
+djangorestframework-simplejwt
+coverage
+drf-yasg
+django-cors-headers
+requests
+stripe
+celery
+redis
+django-celery-beat
